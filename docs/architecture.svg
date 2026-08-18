@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg { fill: #0f172a; }
+      .card { fill: #1e293b; stroke: #334155; stroke-width: 2; rx: 8; }
+      .highlight-card { fill: #1e293b; stroke: #10b981; stroke-width: 2; rx: 8; }
+      .aws-card { fill: #1e293b; stroke: #f59e0b; stroke-width: 2; rx: 8; }
+      .text-title { font-family: system-ui, sans-serif; font-weight: 700; font-size: 16px; fill: #f8fafc; }
+      .text-sub { font-family: system-ui, sans-serif; font-size: 13px; fill: #94a3b8; }
+      .text-pill { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #10b981; }
+      .text-aws { font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; fill: #f59e0b; }
+      .line { stroke: #64748b; stroke-width: 2; marker-end: url(#arrow); }
+      .line-green { stroke: #10b981; stroke-width: 2; marker-end: url(#arrow-green); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="500" class="bg" />
+
+  <!-- Header -->
+  <text x="450" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="800" font-size="22" fill="#f8fafc">
+    ORIGIN — CockroachDB Agentic Memory Architecture
+  </text>
+
+  <!-- Input Row -->
+  <rect x="50" y="90" width="220" height="110" class="card" />
+  <text x="70" y="120" class="text-title">Agent Client & User</text>
+  <text x="70" y="145" class="text-sub">• REST API / Web Dashboard</text>
+  <text x="70" y="165" class="text-sub">• Multi-turn sessions</text>
+  <text x="70" y="185" class="text-sub">• Follow-on queries</text>
+
+  <!-- Core Agent Loop -->
+  <rect x="340" y="90" width="220" height="110" class="card" />
+  <text x="360" y="120" class="text-title">Agent Execution Loop</text>
+  <text x="360" y="145" class="text-sub">src/origin/agent.py</text>
+  <text x="360" y="165" class="text-sub">Atomic turn & retrieval</text>
+  <text x="360" y="185" class="text-pill">Single SQL Transaction</text>
+
+  <!-- CockroachDB Memory Hub -->
+  <rect x="200" y="250" width="500" height="200" class="highlight-card" />
+  <text x="450" y="280" text-anchor="middle" class="text-title" font-size="18">CockroachDB Engine (v26.2.5)</text>
+  <text x="450" y="300" text-anchor="middle" class="text-pill">Distributed Vector Indexing (1024D vector_cosine_ops)</text>
+
+  <g transform="translate(220, 320)">
+    <rect x="0" y="0" width="105" height="110" fill="#0f172a" rx="4" />
+    <text x="52" y="30" text-anchor="middle" class="text-title" font-size="13">Working</text>
+    <text x="52" y="50" text-anchor="middle" class="text-sub" font-size="11">`sessions`</text>
+    <text x="52" y="70" text-anchor="middle" class="text-sub" font-size="11">`session_turns`</text>
+  </g>
+
+  <g transform="translate(340, 320)">
+    <rect x="0" y="0" width="105" height="110" fill="#0f172a" rx="4" />
+    <text x="52" y="30" text-anchor="middle" class="text-title" font-size="13">Semantic</text>
+    <text x="52" y="50" text-anchor="middle" class="text-sub" font-size="11">`license_`</text>
+    <text x="52" y="70" text-anchor="middle" class="text-sub" font-size="11">`determinations`</text>
+  </g>
+
+  <g transform="translate(460, 320)">
+    <rect x="0" y="0" width="105" height="110" fill="#0f172a" rx="4" />
+    <text x="52" y="30" text-anchor="middle" class="text-title" font-size="13">Episodic</text>
+    <text x="52" y="50" text-anchor="middle" class="text-sub" font-size="11">`answers`</text>
+    <text x="52" y="70" text-anchor="middle" class="text-sub" font-size="11">`attributions`</text>
+  </g>
+
+  <g transform="translate(580, 320)">
+    <rect x="0" y="0" width="105" height="110" fill="#0f172a" rx="4" />
+    <text x="52" y="30" text-anchor="middle" class="text-title" font-size="13">Temporal</text>
+    <text x="52" y="50" text-anchor="middle" class="text-sub" font-size="11">`AS OF SYSTEM`</text>
+    <text x="52" y="70" text-anchor="middle" class="text-sub" font-size="11">`TIME` (MVCC)</text>
+  </g>
+
+  <!-- AWS Box -->
+  <rect x="630" y="90" width="220" height="110" class="aws-card" />
+  <text x="650" y="120" class="text-title">AWS Infrastructure</text>
+  <text x="650" y="145" class="text-aws">• S3 Bucket (Storage)</text>
+  <text x="650" y="165" class="text-aws">• Lambda + API Gateway</text>
+  <text x="650" y="185" class="text-aws">• Bedrock Provider</text>
+
+  <!-- Connectors -->
+  <line x1="270" y1="145" x2="340" y2="145" class="line-green" />
+  <line x1="450" y1="200" x2="450" y2="250" class="line-green" />
+  <line x1="560" y1="145" x2="630" y2="145" class="line" />
+</svg>

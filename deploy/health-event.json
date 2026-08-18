@@ -1,0 +1,28 @@
+{
+  "version": "2.0",
+  "routeKey": "GET /api/v1/health",
+  "rawPath": "/api/v1/health",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "application/json",
+    "host": "localhost"
+  },
+  "requestContext": {
+    "accountId": "248557779236",
+    "apiId": "local-smoke-test",
+    "domainName": "localhost",
+    "http": {
+      "method": "GET",
+      "path": "/api/v1/health",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "127.0.0.1",
+      "userAgent": "aws-cli-smoke-test"
+    },
+    "requestId": "smoke-test",
+    "routeKey": "GET /api/v1/health",
+    "stage": "$default",
+    "time": "01/Jan/2026:00:00:00 +0000",
+    "timeEpoch": 1767225600000
+  },
+  "isBase64Encoded": false
+}

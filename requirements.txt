@@ -1,0 +1,9 @@
+# ORIGIN — requires Python 3.12 (acryl-datahub's pydantic-core has no 3.13/3.14 wheel)
+acryl-datahub>=1.6.0.6
+psycopg[binary]>=3.2
+httpx>=0.28
+python-dotenv>=1.0
+boto3>=1.35
+fastapi>=0.110
+uvicorn>=0.28
+pytest>=8.0

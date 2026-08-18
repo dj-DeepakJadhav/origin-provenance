@@ -1,0 +1,31 @@
+name: Deploy Smoke Test
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    env:
+      LIVE_URL: "https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com"
+      WRITE_TOKEN: "origin-demo-2026"
+    steps:
+      - name: Verify Health Endpoint
+        run: |
+          curl -f -s "${LIVE_URL}/api/v1/health" | grep '"status":"ok"'
+
+      - name: Verify Metrics & Memory Hit Rate
+        run: |
+          curl -f -s "${LIVE_URL}/api/v1/metrics" | grep '"memory_hit_rate_pct"'
+
+      - name: Verify Memory Rulings
+        run: |
+          curl -f -s "${LIVE_URL}/api/v1/memory/rulings?limit=5" | grep '"rulings"'
+
+      - name: Verify Memory Recall Probe
+        run: |
+          curl -f -s -X POST "${LIVE_URL}/api/v1/memory/recall" \
+            -H "Content-Type: application/json" \
+            -d '{"license_raw":"MIT"}' | grep '"outcome":"memory:exact"'

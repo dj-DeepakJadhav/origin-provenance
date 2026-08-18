@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "codebase-memory": {
+      "command": "C:\\Users\\djadhav\\AppData\\Roaming\\npm\\node_modules\\codebase-memory-mcp\\bin\\codebase-memory-mcp.exe",
+      "args": []
+    },
+    "cockroachdb-cloud": {
+      "type": "http",
+      "url": "https://cockroachlabs.cloud/mcp"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "origin"
+version = "0.1.0"
+description = "A provenance and licensing ledger for AI document corpora"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    # The Agent Context Kit — one of the four DataHub components the hackathon
+    # requires, and the read path in datahub_context.py. It pins
+    # acryl-datahub==1.6.0.6, so our own constraint must not fight it; the
+    # emitter uses stable APIs and works on either version (verified against a
+    # v1.7.0 GMS with a 1.6.0.6 client).
+    "datahub-agent-context>=1.7.0",
+    "acryl-datahub>=1.6.0.6",
+    "psycopg[binary]>=3.2",
+    "httpx>=0.28",
+    "python-dotenv>=1.0",
+    "boto3>=1.35",
+    # Explicit, not transitive: db.py depends on it to validate CockroachDB
+    # Cloud certificates, because libpq's bundled OpenSSL has no CA store on
+    # Windows. See db._tls_overrides.
+    "certifi>=2024.2.2",
+    # The dashboard and REST API in origin/api/app.py, and `origin.cli serve`.
+    # These were listed in requirements.txt but never here, so an editable
+    # install — which is what the README tells you to do — produced a tree where
+    # `serve` raised ModuleNotFoundError on the first import. mangum adapts the
+    # same ASGI app to AWS Lambda; see docs/AWS_SERVICES.md.
+    "fastapi>=0.110",
+    "uvicorn>=0.28",
+    "mangum>=0.17",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Unit tests must not need a cluster. Anything that does is marked and skipped
+# unless DATABASE_URL is set — see tests/conftest.py.
+markers = [
+    "needs_cluster: requires a live CockroachDB connection",
+    "needs_datahub: requires a running DataHub GMS",
+]

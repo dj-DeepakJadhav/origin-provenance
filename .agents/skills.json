@@ -1,0 +1,37 @@
+{
+  "entries": [
+    {
+      "path": ".agents/skills"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-application-development"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-observability-and-diagnostics"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-onboarding-and-migrations"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-operations-and-lifecycle"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-performance-and-scaling"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-query-and-schema-design"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-resilience-and-disaster-recovery"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-security-and-governance"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-cost-and-usage-management"
+    },
+    {
+      "path": ".agents/skills/cockroachdb-integrations-and-ecosystem"
+    }
+  ]
+}

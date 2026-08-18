@@ -1,0 +1,25 @@
+FROM public.ecr.aws/lambda/python:3.12
+
+# Copy project files into Lambda task root
+COPY pyproject.toml requirements.txt ${LAMBDA_TASK_ROOT}/
+COPY src/ ${LAMBDA_TASK_ROOT}/src/
+COPY sql/ ${LAMBDA_TASK_ROOT}/sql/
+
+# Install minimal dependencies without acryl-datahub to fit inside Lambda image limits
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn \
+    "psycopg[binary]>=3.2" \
+    pydantic \
+    mangum \
+    httpx \
+    boto3 \
+    python-dotenv \
+    certifi
+
+# Install local package into site-packages
+WORKDIR ${LAMBDA_TASK_ROOT}
+RUN pip install --no-cache-dir -e . --no-deps
+
+# Set entrypoint handler for AWS Lambda / API Gateway
+CMD ["origin.api.lambda_handler.handler"]

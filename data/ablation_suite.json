@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "description": "ORIGIN Memory Ablation Benchmark Suite: 20 paired conversational turns where Turn 2 is unresolvable without Turn 1 context.",
+  "cases": [
+    {
+      "id": "followon-clinical-noncommercial",
+      "turns": [
+        "Which datasets in this corpus cover clinical and biomedical text?",
+        "Which of those are non-commercial?"
+      ],
+      "expected_keywords": ["clinical", "biomedical", "health", "medical", "nc"],
+      "rationale": "'those' is anaphoric and requires Turn 1 working memory to bound the search domain to clinical corpora."
+    },
+    {
+      "id": "followon-robotics-permissive",
+      "turns": [
+        "Find all datasets related to robotics and control trajectories.",
+        "What are the license classes for those?"
+      ],
+      "expected_keywords": ["robotics", "control", "trajectory", "permissive", "mit", "apache"],
+      "rationale": "'those' refers strictly to the robotics datasets retrieved in Turn 1."
+    },
+    {
+      "id": "pronoun-the-second-one-license",
+      "turns": [
+        "List the open source NLP corpora with instruction tuning.",
+        "Can the second one be used in commercial products?"
+      ],
+      "expected_keywords": ["instruction", "nlp", "commercial", "permissive", "apache"],
+      "rationale": "'the second one' relies on positional indexing from Turn 1's response."
+    },
+    {
+      "id": "followon-eu-ai-act-status",
+      "turns": [
+        "What is the EU AI Act Article 53 compliance status of this corpus?",
+        "Why did it receive that compliance rating?"
+      ],
+      "expected_keywords": ["article 53", "compliance", "gpai", "opt-out", "summary"],
+      "rationale": "'that compliance rating' refers to the score and determination delivered in Turn 1."
+    },
+    {
+      "id": "pronoun-its-training-split",
+      "turns": [
+        "Show me the metadata for the healthcare benchmark dataset.",
+        "What is its cryptographic content hash?"
+      ],
+      "expected_keywords": ["healthcare", "hash", "sha256", "admitted"],
+      "rationale": "'its' refers directly to the healthcare benchmark dataset named in Turn 1."
+    },
+    {
+      "id": "followon-healthcare-hipaa-obligation",
+      "turns": [
+        "Which documents contain patient records or PHI markers?",
+        "What governance obligations apply to them?"
+      ],
+      "expected_keywords": ["patient", "phi", "hipaa", "obligation", "governance"],
+      "rationale": "'them' references the specific PHI document subset identified in Turn 1."
+    },
+    {
+      "id": "pronoun-which-subset-is-cc-by",
+      "turns": [
+        "Identify the open science documentation files in the corpus.",
+        "Which of them are licensed under Creative Commons?"
+      ],
+      "expected_keywords": ["science", "documentation", "cc-by", "creative commons"],
+      "rationale": "'them' restricts the licensing filter exclusively to open science documentation."
+    },
+    {
+      "id": "followon-finance-takedown-history",
+      "turns": [
+        "Were there any takedown notices issued for financial datasets?",
+        "What was the blast radius of that notice?"
+      ],
+      "expected_keywords": ["financial", "takedown", "blast radius", "affected", "answers"],
+      "rationale": "'that notice' requires conversational memory of the specific takedown discussed in Turn 1."
+    },
+    {
+      "id": "pronoun-who-created-them",
+      "turns": [
+        "Find the datasets admitted with Apache-2.0 licenses.",
+        "Who admitted them into the ledger?"
+      ],
+      "expected_keywords": ["apache-2.0", "admitted", "actor", "ledger", "provenance"],
+      "rationale": "'them' points to the Apache-2.0 admitted documents returned in Turn 1."
+    },
+    {
+      "id": "followon-multilingual-permissive-only",
+      "turns": [
+        "What multilingual corpora are available in this repository?",
+        "Are any of those copyleft?"
+      ],
+      "expected_keywords": ["multilingual", "copyleft", "gpl", "license"],
+      "rationale": "'those' restricts the copyleft check to the multilingual subset."
+    },
+    {
+      "id": "pronoun-their-commercial-viability",
+      "turns": [
+        "Show me all datasets from academic institutions.",
+        "Are they permissible for commercial GPAI pre-training?"
+      ],
+      "expected_keywords": ["academic", "commercial", "gpai", "permissible", "training"],
+      "rationale": "'they' references the academic datasets queried in Turn 1."
+    },
+    {
+      "id": "followon-carddata-tag-conflict",
+      "turns": [
+        "Search for datasets where cardData contradicts metadata tags.",
+        "How did the licensing gate resolve that conflict?"
+      ],
+      "expected_keywords": ["carddata", "tags", "conflict", "fail-closed", "gate"],
+      "rationale": "'that conflict' refers to the specific tag disparity uncovered in Turn 1."
+    },
+    {
+      "id": "pronoun-the-first-dataset-hash",
+      "turns": [
+        "List all admitted documents sorted by admission time.",
+        "Verify the cryptographic receipt of the first one."
+      ],
+      "expected_keywords": ["admitted", "receipt", "sha256", "signature", "provenance"],
+      "rationale": "'the first one' relies on the ordinal ordering of Turn 1's query."
+    },
+    {
+      "id": "followon-copyleft-viral-reach",
+      "turns": [
+        "Which documents have GPL or AGPL licenses?",
+        "What downstream risks do they present to our model weights?"
+      ],
+      "expected_keywords": ["gpl", "agpl", "copyleft", "weights", "viral"],
+      "rationale": "'they' references the copyleft files isolated in Turn 1."
+    },
+    {
+      "id": "pronoun-its-citation-requirements",
+      "turns": [
+        "Find the arXiv research paper on distributed vector indexing.",
+        "What attribution must we include when citing it?"
+      ],
+      "expected_keywords": ["arxiv", "vector", "indexing", "attribution", "citation"],
+      "rationale": "'it' refers to the specific arXiv research paper identified in Turn 1."
+    },
+    {
+      "id": "followon-synthetic-data-status",
+      "turns": [
+        "Are there synthetic datasets in this corpus?",
+        "What provenance guarantees exist for their generation prompts?"
+      ],
+      "expected_keywords": ["synthetic", "provenance", "prompts", "generation", "ledger"],
+      "rationale": "'their' references the synthetic datasets identified in Turn 1."
+    },
+    {
+      "id": "pronoun-can-we-train-on-those",
+      "turns": [
+        "Identify documents flagged with copyright reservation notices under DSM Article 4.",
+        "Can we train on those under EU law?"
+      ],
+      "expected_keywords": ["dsm", "article 4", "opt-out", "reservation", "copyright"],
+      "rationale": "'those' refers to the reservation-flagged documents identified in Turn 1."
+    },
+    {
+      "id": "followon-opt-out-reservation",
+      "turns": [
+        "Check if any web crawl documents have machine-readable opt-outs.",
+        "Were they quarantined or admitted?"
+      ],
+      "expected_keywords": ["opt-out", "quarantined", "robots.txt", "ai.txt", "gate"],
+      "rationale": "'they' refers to the opt-out documents discovered in Turn 1."
+    },
+    {
+      "id": "pronoun-the-excluded-subset-rationale",
+      "turns": [
+        "List all documents that failed gate admission.",
+        "Explain the legal rationale for the third violation."
+      ],
+      "expected_keywords": ["failed", "violation", "rationale", "gate", "license"],
+      "rationale": "'the third violation' requires indexing into the list returned in Turn 1."
+    },
+    {
+      "id": "followon-model-card-governance",
+      "turns": [
+        "What Model Card documentation is generated for this corpus?",
+        "Does it include the full list of content hashes?"
+      ],
+      "expected_keywords": ["model card", "hashes", "article 53", "provenance", "documentation"],
+      "rationale": "'it' refers to the Model Card generated and discussed in Turn 1."
+    }
+  ]
+}
