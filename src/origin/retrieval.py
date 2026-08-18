@@ -89,16 +89,20 @@ def search(
 
         cur.execute(
             """
+            WITH top_k AS (
+                SELECT doc_id,
+                       embedding <=> %s::VECTOR AS distance
+                FROM corpus_search_index
+                WHERE corpus_id = %s
+                ORDER BY distance ASC
+                LIMIT %s
+            )
             SELECT d.doc_id, d.title, d.source_uri, d.license_class,
                    d.license_raw,
-                   d.embedding <=> %s::VECTOR AS distance
-            FROM corpus_members m
-            JOIN documents d ON d.doc_id = m.doc_id
-            WHERE m.corpus_id = %s
-              AND m.removed_at IS NULL
-              AND d.embedding IS NOT NULL
-            ORDER BY distance ASC
-            LIMIT %s
+                   t.distance
+            FROM top_k t
+            JOIN documents d ON d.doc_id = t.doc_id
+            ORDER BY t.distance ASC
             """,
             (vector, corpus_id, top_k),
         )

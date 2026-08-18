@@ -174,7 +174,12 @@ def cmd_licences(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------
 def cmd_ingest(args: argparse.Namespace) -> int:
     corpus_id = corpus.resolve_corpus(args.corpus)
-    payload = huggingface.fetch_datasets(limit=args.limit, sort=args.sort)
+    if args.from_snapshot:
+        import json
+        with open(args.from_snapshot, "r", encoding="utf-8") as f:
+            payload = [json.loads(line) for line in f]
+    else:
+        payload = huggingface.fetch_datasets(limit=args.limit, sort=args.sort)
     records = huggingface.parse_all(payload)
 
     print(f"\nAdmitting {len(records)} documents to {args.corpus!r}\n")
@@ -185,18 +190,29 @@ def cmd_ingest(args: argparse.Namespace) -> int:
     newly = 0
     backfilled = 0
     refused = 0
-    for record in records:
-        result = ledger.admit_document(
-            corpus_id=corpus_id,
-            doc_id=record.doc_id,
-            source_uri=record.source_uri,
-            source_system=huggingface.SOURCE_SYSTEM,
-            content=record.content.encode("utf-8"),
-            title=record.title,
-            license_raw=record.license_raw,
-            # ':' and uppercase are legal in doc_id but not in a storage key.
-            storage_key=f"huggingface/{record.doc_id[3:].replace('/', '__')}.md",
-        )
+    for idx, record in enumerate(records, start=1):
+        if idx % 500 == 0:
+            print(f"... processed {idx} / {len(records)} ...")
+        import time
+        from psycopg import errors as pg_errors
+        for attempt in range(5):
+            try:
+                result = ledger.admit_document(
+                    corpus_id=corpus_id,
+                    doc_id=record.doc_id,
+                    source_uri=record.source_uri,
+                    source_system=huggingface.SOURCE_SYSTEM,
+                    content=record.content.encode("utf-8"),
+                    title=record.title,
+                    license_raw=record.license_raw,
+                    storage_key=f"huggingface/{record.doc_id[3:].replace('/', '__')}.md",
+                )
+                break
+            except pg_errors.SerializationFailure:
+                if attempt == 4:
+                    raise
+                time.sleep(0.5 * (2 ** attempt))
+
         determination = result.determination
         if determination.from_memory:
             from_memory += 1
@@ -481,21 +497,33 @@ def cmd_verify(args: argparse.Namespace) -> int:
             "\nNeither source alone is evidence. This agreement is what makes\n"
             "the membership record defensible."
         )
-        return EXIT_OK
+    else:
+        print("MISMATCH — corpus_members was modified outside the ledger write path.")
+        if result.mvcc_only:
+            print(f"\n  in storage history but not in the columns ({len(result.mvcc_only)}):")
+            for doc_id in sorted(result.mvcc_only)[:20]:
+                print(f"    {doc_id}")
+        if result.bitemporal_only:
+            print(
+                f"\n  in the columns but not in storage history "
+                f"({len(result.bitemporal_only)}):"
+            )
+            for doc_id in sorted(result.bitemporal_only)[:20]:
+                print(f"    {doc_id}")
 
-    print("MISMATCH — corpus_members was modified outside the ledger write path.")
-    if result.mvcc_only:
-        print(f"\n  in storage history but not in the columns ({len(result.mvcc_only)}):")
-        for doc_id in sorted(result.mvcc_only)[:20]:
-            print(f"    {doc_id}")
-    if result.bitemporal_only:
-        print(
-            f"\n  in the columns but not in storage history "
-            f"({len(result.bitemporal_only)}):"
-        )
-        for doc_id in sorted(result.bitemporal_only)[:20]:
-            print(f"    {doc_id}")
-    return EXIT_FAILED
+    search_result = corpus.verify_search_index(corpus_id)
+    print("\nSearch Index Integrity")
+    print(RULE)
+    if search_result.consistent:
+        print("CONSISTENT — The derived search index exactly matches the ledger.")
+    else:
+        print("INCONSISTENT — The search index has drifted from the ledger:")
+        if search_result.missing_from_index:
+            print(f"  {len(search_result.missing_from_index)} documents missing from index")
+        if search_result.orphaned_in_index:
+            print(f"  {len(search_result.orphaned_in_index)} documents orphaned in index")
+
+    return EXIT_OK if (result.consistent and search_result.consistent) else EXIT_FAILED
 
 
 # --------------------------------------------------------------------------
@@ -1193,6 +1221,7 @@ def build_parser() -> argparse.ArgumentParser:
     ingest.add_argument("--corpus", required=True, help="corpus name or id")
     ingest.add_argument("--limit", type=int, default=50)
     ingest.add_argument("--sort", default="downloads")
+    ingest.add_argument("--from-snapshot", help="ingest from local jsonl snapshot")
     ingest.set_defaults(func=cmd_ingest)
 
     gate_parser = subparsers.add_parser(

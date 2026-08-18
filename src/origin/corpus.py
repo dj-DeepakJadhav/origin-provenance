@@ -276,6 +276,59 @@ def verify_integrity(corpus_id: str, when: datetime) -> IntegrityResult:
     )
 
 
+@dataclass(frozen=True)
+class SearchIndexIntegrityResult:
+    consistent: bool
+    missing_from_index: set[str]
+    orphaned_in_index: set[str]
+
+
+def verify_search_index(corpus_id: str) -> SearchIndexIntegrityResult:
+    """Check that the derived search index exactly matches the ledger's reality.
+
+    A mismatch indicates the denormalization drifted from the source of truth,
+    which breaks retrieval logic and auditability. We report the drift rather
+    than silently fixing it.
+    """
+    with db.connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT cm.doc_id
+                FROM corpus_members cm
+                JOIN documents d ON cm.doc_id = d.doc_id
+                WHERE cm.corpus_id = %s
+                  AND cm.removed_at IS NULL
+                  AND d.embedding IS NOT NULL
+                """,
+                (corpus_id,),
+            )
+            truth = {r["doc_id"] for r in cur.fetchall()}
+
+            cur.execute(
+                "SELECT doc_id FROM corpus_search_index WHERE corpus_id = %s",
+                (corpus_id,),
+            )
+            indexed = {r["doc_id"] for r in cur.fetchall()}
+
+            missing = truth - indexed
+            orphaned = indexed - truth
+
+            if missing or orphaned:
+                log.error(
+                    "search index drift for %s: %d missing, %d orphaned",
+                    corpus_id,
+                    len(missing),
+                    len(orphaned),
+                )
+
+            return SearchIndexIntegrityResult(
+                consistent=not (missing or orphaned),
+                missing_from_index=missing,
+                orphaned_in_index=orphaned,
+            )
+
+
 def record_answer_tx(
     cur,
     *,
@@ -429,6 +482,11 @@ def record_takedown(
             WHERE doc_id = %s AND removed_at IS NULL
             """,
             (takedown_id, doc_id),
+        )
+
+        cur.execute(
+            "DELETE FROM corpus_search_index WHERE doc_id = %s",
+            (doc_id,),
         )
 
         cur.execute(

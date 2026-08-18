@@ -374,14 +374,16 @@ def admit_document(
             backfilled = False
             if current["needs_embedding"]:
                 active = provider or get_provider()
+                vector = db.vector_literal(
+                    active.embed(_embedding_text(title, doc_id, content))
+                )
                 cur.execute(
                     "UPDATE documents SET embedding = %s::VECTOR WHERE doc_id = %s",
-                    (
-                        db.vector_literal(
-                            active.embed(_embedding_text(title, doc_id, content))
-                        ),
-                        doc_id,
-                    ),
+                    (vector, doc_id),
+                )
+                cur.execute(
+                    "UPDATE corpus_search_index SET embedding = %s::VECTOR WHERE doc_id = %s",
+                    (vector, doc_id),
                 )
                 backfilled = True
                 log.info("backfilled embedding for %s", doc_id)
@@ -504,6 +506,15 @@ def _ensure_membership(
             removal_ref    = NULL
         """,
         (corpus_id, doc_id, admitted_txn),
+    )
+
+    cur.execute(
+        """
+        INSERT INTO corpus_search_index (corpus_id, doc_id, embedding)
+        SELECT %s, %s, embedding FROM documents WHERE doc_id = %s AND embedding IS NOT NULL
+        ON CONFLICT (corpus_id, doc_id) DO UPDATE SET embedding = excluded.embedding
+        """,
+        (corpus_id, doc_id, doc_id),
     )
 
 

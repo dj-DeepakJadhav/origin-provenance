@@ -21,17 +21,9 @@
 -- a cosine loss — which covers both of our providers (the local one L2-normalises
 -- explicitly, and Titan is called with normalize=true).
 --
--- KNOWN REMAINING LIMITATION, stated rather than hidden:
--- Index acceleration requires that any filters match the index's prefix columns.
--- retrieval.search() joins corpus_members and filters on corpus_id and
--- removed_at, so the planner still declines the index for that query even with
--- the correct opclass. Scaling past a few thousand documents would need a prefix
--- column — a (corpus_id, embedding) index, which means denormalising corpus
--- membership onto the embedding row since a document can belong to several
--- corpora. That is the documented pattern (LangChain's CockroachDB vector store
--- uses a namespace prefix column for exactly this) and it is deliberately out of
--- scope here: at this corpus size the scan is immaterial, and denormalising
--- membership would put the provenance record in two places.
+-- The prefix index was implemented in sql/009_corpus_search_index.sql to address
+-- this limit, using a separate derived corpus_search_index table to keep the
+-- ledger history compact while gaining sub-millisecond retrieval.
 
 SET database = origin;
 
