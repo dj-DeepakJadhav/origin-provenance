@@ -87,6 +87,9 @@ def search(
     with db.transaction() as cur:
         unembedded = _unembedded_count(cur, corpus_id)
 
+        # Try the optimized prefix vector index first. If the corpus has
+        # not been backfilled into corpus_search_index yet, fall back to
+        # the original corpus_members join so existing corpora keep working.
         cur.execute(
             """
             WITH top_k AS (
@@ -107,6 +110,26 @@ def search(
             (vector, corpus_id, top_k),
         )
         rows = cur.fetchall()
+
+        if not rows:
+            # Fallback: corpus not yet in the search index — use the
+            # original join against corpus_members.
+            cur.execute(
+                """
+                SELECT d.doc_id, d.title, d.source_uri, d.license_class,
+                       d.license_raw,
+                       d.embedding <=> %s::VECTOR AS distance
+                FROM corpus_members m
+                JOIN documents d ON d.doc_id = m.doc_id
+                WHERE m.corpus_id = %s
+                  AND m.removed_at IS NULL
+                  AND d.embedding IS NOT NULL
+                ORDER BY distance ASC
+                LIMIT %s
+                """,
+                (vector, corpus_id, top_k),
+            )
+            rows = cur.fetchall()
 
     hits: list[Hit] = []
     from .storage import get_store

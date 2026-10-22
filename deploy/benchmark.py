@@ -38,7 +38,7 @@ import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-DEFAULT_BASE = "https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com"
+DEFAULT_BASE = "http://localhost:8000"  # pass --base <your-api-url> for a deployment
 DEFAULT_ENDPOINT = "/api/v1/health"
 
 #: Requests discarded before measuring, to take container cold start out of the

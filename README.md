@@ -49,12 +49,33 @@ ORIGIN implements a multi-tiered agentic memory system where every memory type l
 #### 🔍 Vector Index Opclass Discovery
 During development on a live CockroachDB Cloud cluster (v26.2.5), we discovered that `CREATE VECTOR INDEX` without an explicit operator class defaults to **`vector_l2_ops`** (L2 distance). Queries performing cosine similarity (`<=>`) bypassed the index completely! `sql/005_vector_opclass.sql` recreates the indexes using **`vector_cosine_ops`**, restoring hardware-accelerated vector search.
 
-### AWS Services Integrated
+### AWS Services (optional)
 
-- **AWS S3**: Document storage (`origin-provenance-248557779236` bucket in `eu-central-1`).
-- **AWS Lambda & API Gateway**: Deployed serverless API endpoint supporting public demo execution (`https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com`). Deploy-ready container image (`Dockerfile.lambda` verified with Mangum ASGI handler). Runbook in [`docs/DEPLOY.md`](docs/DEPLOY.md).
-- **Amazon SageMaker**: Drop-in provider (`src/origin/providers/sagemaker.py`) supporting real-time text-generation model endpoints.
-- **Amazon Bedrock**: Implemented in `src/origin/providers/bedrock.py` for classifying novel license texts via Amazon Titan/Claude embeddings. *(Note: Codebase includes automated fallback to local embeddings when AWS account model quotas or SCP policies are restricted)*.
+ORIGIN runs fully without AWS. The default providers are local (offline embeddings, local file storage). The AWS pieces are opt-in and selected through `.env`:
+
+- **Amazon S3** (`ORIGIN_STORAGE=s3`): document bytes. Written and tested, but the reference deployment is not currently running.
+- **AWS Lambda + API Gateway** (`Dockerfile.lambda`, Mangum handler `origin.api.lambda_handler.handler`): serverless API. See the setup guide below.
+- **Amazon Bedrock** (`ORIGIN_PROVIDER=bedrock`, `src/origin/providers/bedrock.py`): Titan embeddings and Claude generation. Requires model access on your account.
+- **Amazon SageMaker** (`ORIGIN_PROVIDER=sagemaker`, `src/origin/providers/sagemaker.py`): real-time text-generation endpoints.
+
+#### Setting up the AWS pieces
+
+You need an AWS account, the AWS CLI configured (`aws configure`), and Docker. Pick a region and use it for everything; keep the S3 bucket and the Lambda in the same region.
+
+1. **S3 bucket.** Create a private bucket with versioning on and all public access blocked. Set in `.env`:
+   ```
+   ORIGIN_STORAGE=s3
+   ORIGIN_S3_BUCKET=<your-bucket>
+   ORIGIN_S3_PREFIX=origin/documents/
+   AWS_REGION=<your-region>
+   ```
+   Give the Lambda role only `s3:GetObject`, `s3:PutObject` on `arn:aws:s3:::<your-bucket>/origin/documents/*`, and `s3:ListBucket` on the bucket.
+2. **Bedrock (optional).** Request model access for the Titan embedding and Claude models in the Bedrock console, then set `ORIGIN_PROVIDER=bedrock`, `BEDROCK_EMBED_MODEL`, and `BEDROCK_TEXT_MODEL`. Until access is granted, keep `ORIGIN_PROVIDER=local`.
+3. **Container image and Lambda.** Build `Dockerfile.lambda` for `linux/amd64` and push it to an ECR repository. Create the function with `--package-type Image`, 1024 MB memory, and a 30 s timeout. Set the same environment variables as `.env`, plus `DATABASE_URL`.
+4. **API Gateway.** Create an HTTP API with a Lambda integration to the function, then grant API Gateway permission to invoke it (`lambda add-permission`).
+5. **Protect writes.** Set `ORIGIN_WRITE_TOKEN` on the function. If it is empty, write endpoints are open to anyone with the URL.
+
+The step-by-step runbook, including the build flags and the Windows gotchas, is in [`docs/DEPLOY.md`](docs/DEPLOY.md). Substitute your own account, region, and bucket names for the values in that file.
 
 ---
 
@@ -166,6 +187,15 @@ figure.
 .venv/Scripts/python -m origin.cli serve --port 8000
 ```
 Open `http://localhost:8000` to interact with the provenance engine, test agent session turns, and inspect live memory hit rates!
+
+### 6. Run the Ablation Benchmark (optional)
+```bash
+.venv/Scripts/python -m origin.cli ablate --corpus <corpus-name-or-id> --output docs/ABLATION.md
+```
+Requires the corpus's documents to be in `corpus_search_index`. A corpus admitted before that table existed has no rows there, so every answer comes back empty and every score is 0%. Re-run `origin.cli ingest --corpus <corpus>` to backfill it before benchmarking.
+
+### 7. Optional: Deploy to AWS
+See [AWS Services (optional)](#aws-services-optional) above for the setup steps and [`docs/DEPLOY.md`](docs/DEPLOY.md) for the full runbook.
 
 ---
 

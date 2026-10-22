@@ -8,7 +8,7 @@
     "host": "localhost"
   },
   "requestContext": {
-    "accountId": "248557779236",
+    "accountId": "000000000000",
     "apiId": "local-smoke-test",
     "domainName": "localhost",
     "http": {

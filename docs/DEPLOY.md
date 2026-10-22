@@ -5,53 +5,24 @@ an **API Gateway HTTP API**.
 
 | | |
 |---|---|
-| Account | `248557779236` |
+| Account | `<ACCOUNT_ID>` |
 | Region | `eu-central-1` (same as the S3 bucket — keep it that way) |
-| Bucket | `origin-provenance-248557779236` |
+| Bucket | `<YOUR-BUCKET>` |
 | Image | `Dockerfile.lambda` (verified: builds, handler imports, 16 routes) |
 | Function | `origin-api` |
 | ECR repo | `origin-lambda` |
 | Role | `origin-lambda-role` |
-| **API ID** | **`lg7mjxz6m2`** |
-| **Endpoint** | **`https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com`** |
+| **API ID** | **`<API_ID>`** |
+| **Endpoint** | **`https://<API_ID>.execute-api.<REGION>.amazonaws.com`** |
 
 **Why this shape:** Bedrock and Lambda **Function URLs** are blocked at account
 level on this account. API Gateway is the working front door. A container image
 rather than a zip because `psycopg[binary]` needs manylinux wheels that do not
 build cleanly from Windows.
 
-## Progress
-
-- [x] **Step 0** — AWS CLI installed (`aws-cli/2.36.21`), configured, identity confirmed
-- [x] **Step 1** — ECR repository `origin-lambda` created
-- [x] **Step 2** — Docker authenticated to ECR (`Login Succeeded`)
-- [x] **Step 3** — Built, handler import verified, pushed. ⚠️ **First push used a
-      manifest list and Lambda rejected it — rebuild with `--provenance=false
-      --sbom=false` and re-push.** See gotcha 2.
-- [x] **Step 4** — Role policies applied; leftover `origin-s3-documents` removed
-- [x] **Step 5a** — Function `origin-api` created and **Active / Successful**
-      (`x86_64`, 1024 MB, 30 s)
-- [x] **Step 5b** — Environment applied — all 7 keys present
-- [x] **Step 5c** — Direct invoke smoke test: `"status":"ok"`, cluster reachable
-- [x] **Step 6a** — API Gateway created: `lg7mjxz6m2`
-- [x] **Step 6b** — `lambda add-permission` granted
-- [x] **Step 7** — ✅ **Verified live end-to-end**
-
-## ✅ DEPLOYED — verified Aug 17, 13:08 UTC
-
-**`https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com`**
-
-| Endpoint | Result |
-|---|---|
-| `GET /api/v1/health` | `"status":"ok"` · cluster reachable · CockroachDB CCL v26.2.5 · `"storage":"s3"` |
-| `GET /` | 200, dashboard HTML (20.6 KB) |
-| `GET /api/v1/memory/rulings` | 200 — **43 rulings remembered**, live from the memory layer |
-| `POST /api/v1/sessions` *no token* | **401** — write gate engaged |
-| `POST /api/v1/sessions` *with token* | 200 — session created |
-
-Demo write token: **`origin-demo-2026`**, sent as the `X-Origin-Token` header.
-Publish it with the submission so judges can exercise the write path; the 401
-above is the evidence the endpoint is not simply open.
+> **Status:** no AWS deployment is running from this repository. Values in
+> `<ANGLE_BRACKETS>` are placeholders: substitute your own account ID, region,
+> bucket, API ID and write token. Nothing below is a working endpoint.
 
 ## Shell note
 
@@ -124,7 +95,7 @@ winget install --id Amazon.AWSCLI -e
 ```
 
 Reopen the shell, then `aws --version` and `aws configure`. Enter the access key,
-secret, and `eu-central-1`. Confirm the account reads `248557779236`:
+secret, and `eu-central-1`. Confirm the account reads `<ACCOUNT_ID>`:
 
 ```
 aws sts get-caller-identity
@@ -151,7 +122,7 @@ aws ecr create-repository --repository-name origin-lambda --region eu-central-1
 ## Step 2 — Authenticate Docker to ECR ✅
 
 ```
-aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 248557779236.dkr.ecr.eu-central-1.amazonaws.com
+aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com
 ```
 
 Expect `Login Succeeded`. This expires after ~12 hours — re-run if a later push
@@ -184,8 +155,8 @@ docker run --rm --entrypoint python origin-lambda:latest -c "from origin.api.lam
 Only if that prints `handler OK`:
 
 ```
-docker tag origin-lambda:latest 248557779236.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
-docker push 248557779236.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
+docker tag origin-lambda:latest <ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
+docker push <ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
 ```
 
 The push is ~800 MB. Expect several minutes.
@@ -250,7 +221,7 @@ aws iam delete-role-policy --role-name origin-lambda-role --policy-name origin-s
 ## Step 5 — Create the function
 
 ```
-aws lambda create-function --function-name origin-api --package-type Image --code ImageUri=248557779236.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest --role arn:aws:iam::248557779236:role/origin-lambda-role --architectures x86_64 --timeout 30 --memory-size 1024 --region eu-central-1
+aws lambda create-function --function-name origin-api --package-type Image --code ImageUri=<ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest --role arn:aws:iam::<ACCOUNT_ID>:role/origin-lambda-role --architectures x86_64 --timeout 30 --memory-size 1024 --region eu-central-1
 ```
 
 ### Environment variables — generate, do not hand-edit
@@ -338,7 +309,7 @@ through API Gateway every one of those failures returns the same opaque 500.
 ## Step 6 — API Gateway HTTP API
 
 ```
-aws apigatewayv2 create-api --name origin-api --protocol-type HTTP --target arn:aws:lambda:eu-central-1:248557779236:function:origin-api --region eu-central-1
+aws apigatewayv2 create-api --name origin-api --protocol-type HTTP --target arn:aws:lambda:eu-central-1:<ACCOUNT_ID>:function:origin-api --region eu-central-1
 ```
 
 `--target` creates the integration, the `$default` route, and an auto-deploying
@@ -351,14 +322,14 @@ carries it:
 
 ```json
 {
-  "ApiId": "lg7mjxz6m2",
-  "ApiEndpoint": "https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com"
+  "ApiId": "<API_ID>",
+  "ApiEndpoint": "https://<API_ID>.execute-api.<REGION>.amazonaws.com"
 }
 ```
 
-**For this deployment the ID is `lg7mjxz6m2`**, already substituted throughout
-the rest of this document. It is also the first label of `ApiEndpoint` — the same
-string. If you tear down and recreate, the new ID must be substituted again.
+Substitute that ID for `<API_ID>` everywhere it appears in this document. It is
+also the first label of `ApiEndpoint`, which is the same string. If you tear down
+and recreate the API, the new ID must be substituted again.
 
 **Lost the output, or want to confirm what exists:**
 
@@ -374,7 +345,7 @@ Grant the gateway permission to invoke — **this is the step people forget**, a
 without it every request returns 500:
 
 ```
-aws lambda add-permission --function-name origin-api --statement-id apigw-invoke --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:eu-central-1:248557779236:lg7mjxz6m2/*/*" --region eu-central-1
+aws lambda add-permission --function-name origin-api --statement-id apigw-invoke --action lambda:InvokeFunction --principal apigateway.amazonaws.com --source-arn "arn:aws:execute-api:eu-central-1:<ACCOUNT_ID>:<API_ID>/*/*" --region eu-central-1
 ```
 
 Confirm it exists — `create-api --target` does **not** add it for you:
@@ -391,19 +362,19 @@ the expected error before this step and a bug after it.
 ## Step 7 — Verify
 
 ```
-curl https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com/api/v1/health
+curl https://<API_ID>.execute-api.<REGION>.amazonaws.com/api/v1/health
 ```
 
 Then in a browser:
 
-- `https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com/` — the dashboard,
+- `https://<API_ID>.execute-api.<REGION>.amazonaws.com/` — the dashboard,
   including the live memory hit rate
 - `/api/v1/memory/rulings` — the memory layer (read, no token needed)
 
 Write path, using the token you set:
 
 ```
-curl -X POST https://lg7mjxz6m2.execute-api.eu-central-1.amazonaws.com/api/v1/sessions -H "X-Origin-Token: origin-demo-2026" -H "Content-Type: application/json" -d "{\"actor\":\"judge\"}"
+curl -X POST https://<API_ID>.execute-api.<REGION>.amazonaws.com/api/v1/sessions -H "X-Origin-Token: <WRITE_TOKEN>" -H "Content-Type: application/json" -d "{\"actor\":\"judge\"}"
 ```
 
 **Warm it before recording.** The first invocation pulls an 800 MB image and
@@ -420,9 +391,9 @@ requires, and it belongs in the README, Devpost, and the video.
 ```
 docker build --platform linux/amd64 --provenance=false --sbom=false -f Dockerfile.lambda -t origin-lambda:latest .
 docker run --rm --entrypoint python origin-lambda:latest -c "from origin.api.lambda_handler import handler; print('OK')"
-docker tag origin-lambda:latest 248557779236.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
-docker push 248557779236.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
-aws lambda update-function-code --function-name origin-api --image-uri 248557779236.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest --region eu-central-1
+docker tag origin-lambda:latest <ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
+docker push <ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest
+aws lambda update-function-code --function-name origin-api --image-uri <ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com/origin-lambda:latest --region eu-central-1
 ```
 
 Pushing the same tag does **not** update the function — `update-function-code` is
@@ -482,7 +453,7 @@ README stops claiming a deployment exists.
 ## Teardown
 
 ```
-aws apigatewayv2 delete-api --api-id lg7mjxz6m2 --region eu-central-1
+aws apigatewayv2 delete-api --api-id <API_ID> --region eu-central-1
 aws lambda delete-function --function-name origin-api --region eu-central-1
 aws ecr delete-repository --repository-name origin-lambda --force --region eu-central-1
 aws iam delete-role-policy --role-name origin-lambda-role --policy-name origin-s3-access

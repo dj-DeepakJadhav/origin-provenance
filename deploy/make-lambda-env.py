@@ -36,9 +36,6 @@ import os
 import pathlib
 import sys
 
-#: Published in the README and on Devpost so judges can exercise the write path.
-DEMO_WRITE_TOKEN = "origin-demo-2026"
-
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUTPUT_NAME = "origin-lambda-env.json"
 
@@ -85,18 +82,26 @@ def main() -> int:
         print("       It must be a single line. Re-copy just the connection URI.")
         return 1
 
+    bucket = env.get("ORIGIN_S3_BUCKET", "")
+    write_token = env.get("ORIGIN_WRITE_TOKEN", "")
+    if not bucket:
+        print("error: ORIGIN_S3_BUCKET is not set in .env")
+        return 1
+    if not write_token:
+        print("error: ORIGIN_WRITE_TOKEN is not set in .env")
+        print("       Without it the Lambda accepts unauthenticated writes.")
+        return 1
+
     variables = {
         "DATABASE_URL": database_url,
         "ORIGIN_STORAGE": "s3",
-        "ORIGIN_S3_BUCKET": env.get(
-            "ORIGIN_S3_BUCKET", "origin-provenance-248557779236"
-        ),
+        "ORIGIN_S3_BUCKET": bucket,
         "ORIGIN_S3_PREFIX": env.get("ORIGIN_S3_PREFIX", "origin/documents"),
         # Bedrock is blocked at account level, so the deployed profile classifies
         # novel licences with the rule-based path rather than a model.
         "ORIGIN_PROVIDER": "local",
         "ORIGIN_EMBED_DIM": env.get("ORIGIN_EMBED_DIM", "1024"),
-        "ORIGIN_WRITE_TOKEN": DEMO_WRITE_TOKEN,
+        "ORIGIN_WRITE_TOKEN": write_token,
     }
 
     leaked = RESERVED & set(variables)
