@@ -4,27 +4,29 @@
 
 Prove what your AI was allowed to learn from, enforce strict conversational working memory, block unlicensed data at the door, and rewind to any past instant to trace exact provenance receipts.
 
+[![Walkthrough Video](https://img.youtube.com/vi/2YOQl2g6Jy8/mqdefault.jpg)](https://www.youtube.com/watch?v=2YOQl2g6Jy8)
+
 ---
 
-## 🧠 Five Agentic Memory Systems on CockroachDB
+## Five Agentic Memory Systems on CockroachDB
 
-ORIGIN implements a multi-tiered agentic memory system where every memory type leverages CockroachDB's distributed architecture, transactional atomicity, and vector indexing:
+ORIGIN implements a multi-tiered agentic memory system where every memory type uses CockroachDB's distributed architecture, transactional atomicity, and vector indexing:
 
 | Memory Type | Description | CockroachDB Storage & Mechanism | Status |
 |---|---|---|---|
-| **Working Memory** | Multi-turn conversational history with recency + vector similarity recall over session turns | `sessions` + `session_turns` tables (`VECTOR(1024)` with `vector_cosine_ops`) | ✅ Built (`sql/006_agent_memory.sql`) |
-| **Semantic Memory** | Learned, reinforced license determinations & policy rulings | `license_determinations` with vector similarity; human corrections create `superseded_by` audit trails | ✅ Built (`sql/001`, `sql/005`) |
-| **Episodic Memory** | Past AI Q&A answers, exact document snippets, and immutable attribution receipts | `answers` + `answer_attributions` written in single atomic SQL transactions | ✅ Built (`sql/001`) |
-| **Temporal Memory** | Bitemporal dataset state rewindable to any point-in-time | MVCC `AS OF SYSTEM TIME` queries cross-checked against application bitemporal timestamps (`admitted_at` / `removed_at`) | ✅ Built (`sql/001`, `sql/002`) |
-| **Task State Memory** | Multi-step agentic workflow progression with step-level persistence & crash resumption | `agent_tasks` table storing step state, payload, and structured results with indexed resume queries | ✅ Built (`sql/007_task_state.sql`) |
+| **Working Memory** | Multi-turn conversational history with recency + vector similarity recall over session turns | `sessions` + `session_turns` tables (`VECTOR(1024)` with `vector_cosine_ops`) | Built (`sql/006_agent_memory.sql`) |
+| **Semantic Memory** | Learned, reinforced license determinations & policy rulings | `license_determinations` with vector similarity; human corrections create `superseded_by` audit trails | Built (`sql/001`, `sql/005`) |
+| **Episodic Memory** | Past AI Q&A answers, exact document snippets, and immutable attribution receipts | `answers` + `answer_attributions` written in single atomic SQL transactions | Built (`sql/001`) |
+| **Temporal Memory** | Bitemporal dataset state rewindable to any point-in-time | MVCC `AS OF SYSTEM TIME` queries cross-checked against application bitemporal timestamps (`admitted_at` / `removed_at`) | Built (`sql/001`, `sql/002`) |
+| **Task State Memory** | Multi-step agentic workflow progression with step-level persistence & crash resumption | `agent_tasks` table storing step state, payload, and structured results with indexed resume queries | Built (`sql/007_task_state.sql`) |
 
 > **The CockroachDB Advantage:** The user query, agent response turn, generated answer, and document attributions commit **atomically in one database transaction**. A conversational turn and its receipts cannot diverge or suffer partial writes.
 
 ---
 
-## ⚡ Key Technical Features & Provenance Guarantees
+## Key Technical Features & Provenance Guarantees
 
-- **Agentic Working Memory Loop (`src/origin/agent.py`)**: `recall_working`, `recall_semantic`, `recall_episodic`, and `recall_temporal` feed context into every response. Follow-on queries resolve seamlessly against past session turns.
+- **Agentic Working Memory Loop (`src/origin/agent.py`)**: `recall_working`, `recall_semantic`, `recall_episodic`, and `recall_temporal` feed context into every response. Follow-on queries resolve directly against past session turns.
 - **Resumable Multi-Step Task State**: Long-running agent tasks (such as `corpus_audit`) persist progress at each step boundary in CockroachDB and resume seamlessly upon failure.
 - **Bouncer at the Door**: Non-commercial or restricted documents entering a commercial corpus **block the build** before index creation and quote the violating license clause.
 - **Bitemporal & MVCC Time Travel**: `"What was in the corpus at 14:22 on July 3?"` is answered via native MVCC snapshot reads (`AS OF SYSTEM TIME`).
@@ -35,18 +37,18 @@ ORIGIN implements a multi-tiered agentic memory system where every memory type l
 
 ---
 
-## 🛠️ Required Technologies & Tools
+## Required Technologies & Tools
 
 ### CockroachDB Tools: What the Agent & Engine Actually Did
 
 | Tool | Status | What the Agent & Engine Did |
 |---|---|---|
-| **Distributed Vector Indexing** | ✅ | Recalls working memory turns (`session_turns.embedding`), semantic policy rulings (`license_determinations.embedding`), and corpus documents (`documents.embedding`) using cosine similarity (`<=>`) accelerated by explicit `vector_cosine_ops` indexes. |
-| **Cloud Managed MCP Server** | ✅ | Connected via `.agents/mcp_config.json` (`https://cockroachlabs.cloud/mcp`) enabling development agents to query cluster metadata, inspect live tables, and verify vector index state on CockroachDB Cloud. |
-| **ccloud CLI & Control Plane** | ✅ | Integrated at runtime via `/api/v1/cluster` to inspect live cluster topology, gateway regions, table range distribution, and zone configurations (`SHOW ZONE CONFIGURATION`) on v26.2.5. |
-| **CockroachDB Agent Skills** | ✅ | Applied architectural and schema patterns (transaction retry hoisting, bitemporal modeling, explicit opclass indexing) vendored across 6 active domain packages (34 executable skills) in `.claude/skills/` with Apache-2.0 notice. |
+| **Distributed Vector Indexing** | Built | Recalls working memory turns (`session_turns.embedding`), semantic policy rulings (`license_determinations.embedding`), and corpus documents (`documents.embedding`) using cosine similarity (`<=>`) accelerated by explicit `vector_cosine_ops` indexes. |
+| **Cloud Managed MCP Server** | Integrated | Connected via `.agents/mcp_config.json` (`https://cockroachlabs.cloud/mcp`) enabling development agents to query cluster metadata, inspect live tables, and verify vector index state on CockroachDB Cloud. |
+| **ccloud CLI & Control Plane** | Integrated | Integrated at runtime via `/api/v1/cluster` to inspect live cluster topology, gateway regions, table range distribution, and zone configurations (`SHOW ZONE CONFIGURATION`) on v26.2.5. |
+| **CockroachDB Agent Skills** | Applied | Applied architectural and schema patterns (transaction retry hoisting, bitemporal modeling, explicit opclass indexing) vendored across 6 active domain packages (34 executable skills) in `.claude/skills/` with Apache-2.0 notice. |
 
-#### 🔍 Vector Index Opclass Discovery
+#### Vector Index Opclass Discovery
 During development on a live CockroachDB Cloud cluster (v26.2.5), we discovered that `CREATE VECTOR INDEX` without an explicit operator class defaults to **`vector_l2_ops`** (L2 distance). Queries performing cosine similarity (`<=>`) bypassed the index completely! `sql/005_vector_opclass.sql` recreates the indexes using **`vector_cosine_ops`**, restoring hardware-accelerated vector search.
 
 ### AWS Services (optional)
